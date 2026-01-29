@@ -3,4 +3,3 @@ cryptography==46.0.3
 playwright==1.57.0
 allure-behave==2.8.22
 allure-python-commons==2.8.22
-gevent==25.9.1
