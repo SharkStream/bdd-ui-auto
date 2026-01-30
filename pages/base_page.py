@@ -28,6 +28,12 @@ class BasePage:
     def fill_input(self, selector: str, value: str):
         self.page.locator(selector).wait_for(timeout=5000)
         self.page.fill(selector, value)
+    
+    def fill_label_input(self, label_text: str, value: str):
+        self.page.get_by_label(label_text).fill(value)
+
+    def verify_label_value(self, label_text: str, expected_value: str):
+        expect(self.page.get_by_label(label_text)).to_have_value(expected_value)
 
     def select_option(self, selector: str, value: str):
         self.page.select_option(selector, value)

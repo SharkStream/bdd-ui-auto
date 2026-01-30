@@ -1,4 +1,3 @@
-@UI
 Feature: Login feature
 	This is a demo feature to illustrate the structure of a feature file.
 

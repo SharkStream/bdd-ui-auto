@@ -3,6 +3,7 @@
     "endpoints": {
         "login": "/login",
         "inputs": "/inputs",
+        "register": "/register",
         "healthCheck": "/notes/api/health-check"
     }
 }

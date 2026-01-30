@@ -1,20 +1,19 @@
-@UI
-Feature: Login feature
+Feature: Input feature
 	This is a demo feature to illustrate the structure of a feature file.
 
-	Scenario Outline: Login scenario
+	Scenario Outline: Input scenario
 		Given I am on the input page
-		When I enter "<number>" in the "<number_field>" field
-		When I enter "<text>" in the "<text_field>" field
-		When I enter "<password>" in the "<password_field>" field
-		When I enter "<date>" in the "<date_field>" field
+		When I enter "<number>" in the label of "<number_label>"
+		When I enter "<text>" in the label of "<text_label>"
+		When I enter "<password>" in the label of "<password_label>"
+		When I enter "<date>" in the label of "<date_label>"
 		When I click on "<button_text>" button
-		Then I can see "<number_field>" with "<number>"
-		Then I can see "<text_field>" with "<text>"
-		Then I can see "<password_field>" with "<password>"
-		Then I can see "<date_field>" with "<date>"
+		Then I can see "<number_label>" with "<number>"
+		Then I can see "<text_label>" with "<text>"
+		Then I can see "<password_label>" with "<password>"
+		Then I can see "<date_label>" with "<date>"
 
 		@wip
 		Examples:
-			| number_field | text_field | password_field | date_field | button_text | number | text       | password       | date       |
-			| number       | text       | password       | date       | Display Inputs      | 123    | example    | mypassword     | 2023-01-01 |
+			| number_label | text_label | password_label | date_label | button_text | number | text       | password       | date       |
+			| Input: Number | Input: Text  | Input: Password       | Input: Date       | Display Inputs      | 123    | example    | mypassword     | 2023-01-01 |
