@@ -1,3 +1,5 @@
+from .base_page import BasePage
+from .input_page import InputPage
 from .login_page import LoginPage
 from .secure_page import SecurePage
 
@@ -12,10 +14,20 @@ class PageFactory:
         return SecurePage(context.page, context)
     
     @staticmethod
+    def get_input_page(context):
+        return InputPage(context.page, context)
+    
+    @staticmethod
+    def get_base_page(context):
+        return BasePage(context.page, context)
+    
+    @staticmethod
     def get_page(page_name: str, context):
         page_map = {
+            'base': BasePage,
             'login': LoginPage,
-            'secure': SecurePage
+            'secure': SecurePage,
+            'input': InputPage
         }
         
         if page_name not in page_map:

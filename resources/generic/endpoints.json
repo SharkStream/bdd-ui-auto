@@ -2,6 +2,7 @@
     "context": {},
     "endpoints": {
         "login": "/login",
+        "inputs": "/inputs",
         "healthCheck": "/notes/api/health-check"
     }
 }

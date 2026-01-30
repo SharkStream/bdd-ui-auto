@@ -52,3 +52,6 @@ class BasePage:
 
     def verify_link_present(self, link_text: str) -> None:
         expect(self.page.get_by_role("link", name=link_text)).to_be_visible()
+
+    def click_button_by_exact_text(self, button_text: str) -> None:
+        self.page.get_by_role("button", name=button_text, exact=True).click()
