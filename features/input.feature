@@ -13,7 +13,6 @@ Feature: Input feature
 		Then I can see "<password_label>" with "<password>"
 		Then I can see "<date_label>" with "<date>"
 
-		@wip
 		Examples:
 			| number_label | text_label | password_label | date_label | button_text | number | text       | password       | date       |
 			| Input: Number | Input: Text  | Input: Password       | Input: Date       | Display Inputs      | 123    | example    | mypassword     | 2023-01-01 |

@@ -5,6 +5,26 @@ import logging
 from utils.logger import log_info_emoji
 
 
+def ai_selector_healer(context, exception, original_selector="") -> str:
+    locator = ""
+    log_info_emoji("⚠️ ", "Selector failed, attempting to heal with AI...")
+
+    new_selector = context.ai.heal_selector(
+        context=context,
+        exception=exception,
+        original_selector=original_selector
+    )
+
+    try:
+        locator = context.page.locator(new_selector)
+        locator.wait_for(timeout=5000)
+        log_info_emoji(
+            "✅ ", "AI-healed selector is valid and found an element.")
+    except Exception as e:
+        log_info_emoji("❌ ", f"AI-healed selector is invalid: {e}")
+    return locator
+
+
 class BasePage:
 
     def __init__(self, page: Page, context):
@@ -14,7 +34,7 @@ class BasePage:
 
     def navigate_to(self, url: str):
         self.logger.info(f"Navigating to: {url}")
-        self.page.goto(url)
+        self.page.goto(url, timeout=120000)
 
     def wait_for_page_load(self):
         self.page.wait_for_load_state("networkidle")
@@ -28,9 +48,16 @@ class BasePage:
     def fill_input(self, selector: str, value: str):
         self.page.locator(selector).wait_for(timeout=5000)
         self.page.fill(selector, value)
-    
+
     def fill_label_input(self, label_text: str, value: str):
         self.page.get_by_label(label_text).fill(value)
+
+    def fill_input_ai(self, selector: str, value: str):
+        try:
+            self.fill_input(selector, value)
+        except Exception as e:
+            locator = ai_selector_healer(self.context, e, selector)
+            locator.fill(value)
 
     def verify_label_value(self, label_text: str, expected_value: str):
         expect(self.page.get_by_label(label_text)).to_have_value(expected_value)

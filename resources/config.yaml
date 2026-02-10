@@ -1,0 +1,2 @@
+# ai_model: "devstral:24b"
+ai_model: "qwen3-coder:480b-cloud"
