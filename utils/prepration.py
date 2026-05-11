@@ -70,4 +70,11 @@ def run_options():
         help='Serve Allure report after test completion'
     )
 
+    parser.add_argument(
+        '--timeout',
+        type=int,
+        default=30,
+        help='Default timeout in seconds for Playwright operations (default: 30)'
+    )
+
     return parser.parse_args()

@@ -1,4 +1,5 @@
 import logging
+import os
 import sys
 from datetime import datetime
 
@@ -12,68 +13,59 @@ class CustomFormatter(logging.Formatter):
     CYAN = '\033[36m'
     RESET = '\033[0m'
 
+    LEVEL_COLORS = {
+        logging.ERROR: RED,
+        logging.WARNING: YELLOW,
+        logging.INFO: MAGENTA,
+        logging.DEBUG: CYAN,
+    }
+
     def format(self, record):
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         message = record.getMessage()
         log_line = f"{timestamp} | {message}"
-        
-        # Color based on log level
-        if record.levelno >= logging.ERROR:
-            log_line = f"{self.RED}{log_line}{self.RESET}"
-        elif record.levelno == logging.WARNING:
-            log_line = f"{self.YELLOW}{log_line}{self.RESET}"
-        elif "✅" in message or "success" in message.lower():
-            log_line = f"{self.GREEN}{log_line}{self.RESET}"
-        elif "❌" in message or "failing" in message.lower():
-            log_line = f"{self.RED}{log_line}{self.RESET}"
-        elif "⚠️" in message or "warning" in message.lower():
-            log_line = f"{self.YELLOW}{log_line}{self.RESET}"
-        elif "📊" in message or "📁" in message or "🚀" in message or "👥" in message or "🔄" in message:
-            log_line = f"{self.CYAN}{log_line}{self.RESET}"
-        elif "🌐" in message:
-            log_line = f"{self.BLUE}{log_line}{self.RESET}"
-        else:
-            log_line = f"{self.MAGENTA}{log_line}{self.RESET}"
-        
+
+        color = self.LEVEL_COLORS.get(record.levelno, self.MAGENTA)
+        log_line = f"{color}{log_line}{self.RESET}"
+
         return log_line
+
+
+class DebugNoiseFilter(logging.Filter):
+    """Filters out known debugger/threading noise from log output."""
+
+    _default_noise_keywords = [
+        "pydevd", "Exception ignored",
+        "threading.py", "current_thread", "Using selector"
+    ]
+
+    def filter(self, record):
+        message = record.getMessage()
+        keywords = os.environ.get("LOG_FILTER_KEYWORDS")
+        if keywords:
+            noise_keywords = [k.strip() for k in keywords.split(",")]
+        else:
+            noise_keywords = self._default_noise_keywords
+        if any(keyword in message for keyword in noise_keywords):
+            return False
+        return True
 
 
 def setup_logger(name="test_framework", level=logging.INFO):
     """Setup and return a custom logger with the specified format."""
-    
-    # Create logger
+
     logger = logging.getLogger(name)
     logger.setLevel(level)
-    
-    # Clear any existing handlers to avoid duplicates
     logger.handlers.clear()
-    
-    # Create console handler
+
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(level)
-    
-    # Create formatter and add it to the handler
-    formatter = CustomFormatter()
-    console_handler.setFormatter(formatter)
-    
-    # Add filter to suppress PyCharm debugging errors
-    class PyCharmFilter(logging.Filter):
-        def filter(self, record):
-            message = record.getMessage()
-            # Filter out PyCharm debugging errors and threading issues
-            if any(keyword in message for keyword in [
-                "pydevd", "Exception ignored", "Traceback", 
-                "TypeError: 'NoneType' object is not subscriptable",
-                "threading.py", "current_thread", "Using selector"
-            ]):
-                return False
-            return True
-    
-    console_handler.addFilter(PyCharmFilter())
-    
-    # Add the handler to the logger
+    console_handler.setFormatter(CustomFormatter())
+
+    if os.environ.get("LOG_FILTER", "1") == "1":
+        console_handler.addFilter(DebugNoiseFilter())
+
     logger.addHandler(console_handler)
-    
     return logger
 
 
@@ -110,4 +102,4 @@ def log_info_emoji(emoji, message):
 
 
 def log_error_emoji(emoji, message):
-    default_logger.error(f"{emoji} {message}") 
+    default_logger.error(f"{emoji} {message}")

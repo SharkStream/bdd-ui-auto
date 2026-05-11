@@ -89,9 +89,7 @@ def filter_features_by_tags(feature_files, tags):
                         relevant_features.append(feature_file)
                         break
         except Exception as e:
-            log_warning(f"Could not read {feature_file}: {e}")
-            # If we can't read the file, include it to be safe
-            relevant_features.append(feature_file)
+            log_warning(f"Could not read {feature_file}: {e}, skipping")
 
     return relevant_features
 
@@ -185,6 +183,10 @@ def main():
 
     os.environ['BROWSER'] = args.browser
     log_info_emoji("🌐", f"Browser: {str(args.browser).capitalize()}")
+
+    if args.timeout:
+        os.environ['PLAYWRIGHT_TIMEOUT'] = str(args.timeout * 1000)
+        log_info_emoji("⏱️", f"Playwright timeout: {args.timeout}s")
 
     if args.tracing:
         log_info_emoji("🔍", f"Tracing Enabled | Trace files will be saved to {TRACES_DIR}")

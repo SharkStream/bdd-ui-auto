@@ -2,9 +2,7 @@ import os
 import json
 import re
 
-import ollama
-
-from datetime import datetime
+from datetime import datetime, timezone
 
 from behave.runner import Context
 from playwright.sync_api import Page
@@ -17,7 +15,10 @@ from utils.config import load_config
 class AISelectorHealer:
 
     def __init__(self):
-        self.model = load_config()['ai_model']
+        config = load_config()
+        self.model = config['ai_model']
+        self.confidence_threshold = config.get('ai_confidence_threshold', 70)
+        self.html_snippet_max_chars = config.get('ai_html_snippet_max_chars', 16000)
         self.selector_map_file = "selector_map.json"
         self.log_file = "selector_log.json"
         self._load_selector_map()
@@ -39,7 +40,7 @@ class AISelectorHealer:
             with open(self.log_file, "r") as f:
                 try:
                     existing = json.load(f)
-                except:
+                except (json.JSONDecodeError, FileNotFoundError):
                     existing = []
 
         existing.append(entry)
@@ -51,6 +52,7 @@ class AISelectorHealer:
         self._save_selector_map()
 
     def _query_ai(self, prompt, screenshot_path):
+        import ollama
         response = ollama.generate(
             model=self.model,
             prompt=prompt,
@@ -66,6 +68,7 @@ class AISelectorHealer:
         return response.response
 
     def stop_model(self):
+        import ollama
         res = ollama.generate(
             model=self.model,
             stream=False,
@@ -76,12 +79,15 @@ class AISelectorHealer:
 
     def heal_selector(self, context: Context, exception: str, original_selector: str = "") -> str:
 
-        # if original_selector in self.selector_map:
-        #     return self.selector_map[original_selector]
+        # Check cached selector map first to avoid expensive AI calls
+        if original_selector and original_selector in self.selector_map:
+            cached = self.selector_map[original_selector]
+            log_info_emoji("🔄 ", f"Using cached healed selector: {cached}")
+            return cached
 
         screenshot_path = f"{SCREENSHOTS_DIR}/ai-{str(context.bdd_step).replace(' ', '_')}.png"
         context.page.screenshot(path=screenshot_path)
-        html_snippet = context.page.content()[:8000]
+        html_snippet = context.page.content()[:self.html_snippet_max_chars]
 
         prompt = f"""
             You’re helping debug a failed Playwright web automation test. Here's what you have:
@@ -123,7 +129,7 @@ class AISelectorHealer:
             ai_response)
 
         log_entry = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(tz=timezone.utc).isoformat(),
             "exception": exception,
             "suggested_selector_identifier": selector_identifier if original_selector == "" else original_selector,
             "suggested_selector": suggested_selector,
@@ -133,6 +139,13 @@ class AISelectorHealer:
         }
 
         if suggested_selector:
+            confidence_value = int(confidence.replace('%', '')) if confidence else 0
+            if confidence_value < self.confidence_threshold:
+                log_info_emoji(
+                    "⚠️ ", f"AI confidence {confidence_value}% below threshold {self.confidence_threshold}%, discarding")
+                self._log_result(log_entry)
+                return ""
+
             is_valid = validate_selector(
                 context.page, suggested_selector, selector_type)
             log_entry["valid"] = is_valid
@@ -232,7 +245,24 @@ def extract_selector_and_confidence(ai_response):
 def validate_selector(page: Page, selector: str, selector_type: str) -> bool:
     try:
         if selector_type == "xpath":
-            return len(page.query_selector_all(f'xpath={selector}')) > 0
+            return len(page.query_selector_all(f"xpath={selector}")) > 0
+        if selector_type == "css":
+            return len(page.query_selector_all(selector)) > 0
+        if selector_type in ("text", "text_selector"):
+            return page.get_by_text(selector, exact=True).count() > 0
+        if selector_type == "role":
+            return page.get_by_role(selector).count() > 0
+        # Fallback: try as CSS first, then XPath
+        try:
+            if len(page.query_selector_all(selector)) > 0:
+                return True
+        except Exception:
+            pass
+        try:
+            if len(page.query_selector_all(f"xpath={selector}")) > 0:
+                return True
+        except Exception:
+            pass
         return False
     except Exception:
         return False

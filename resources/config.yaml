@@ -1,2 +1,4 @@
 # ai_model: "devstral:24b"
 ai_model: "qwen3-coder:480b-cloud"
+ai_confidence_threshold: 70
+ai_html_snippet_max_chars: 16000

@@ -2,6 +2,8 @@ import os
 from helpers.constants import SCREENSHOTS_DIR, REPORTS, WORKER_DIR, ALLURE_RESULTS_DIR
 from utils.logger import log_info_emoji
 
+_shown_messages: set = set()
+
 
 def create_reports_structure():
     """
@@ -10,7 +12,7 @@ def create_reports_structure():
     directories = [REPORTS, SCREENSHOTS_DIR, WORKER_DIR, ALLURE_RESULTS_DIR]
     for directory in directories:
         os.makedirs(directory, exist_ok=True)
-    
-    if not hasattr(create_reports_structure, "_shown"):
-        log_info_emoji("📁", f"Reports directory structure created")
-        create_reports_structure._shown = True
+
+    if "reports_structure" not in _shown_messages:
+        log_info_emoji("📁", "Reports directory structure created")
+        _shown_messages.add("reports_structure")

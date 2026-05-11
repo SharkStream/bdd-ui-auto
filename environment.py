@@ -1,4 +1,9 @@
 from types import SimpleNamespace
+from typing import Any
+
+from behave.runner import Context
+from behave.model import Feature, Scenario, Step
+
 from ai.selector_healer import AISelectorHealer
 from utils.browser.browser import prepare_browser
 from helpers.constants import REPORTS, ENV_CONFIG_JSON, ENDPOINTS_CONFIG_JSON, USERS_CONFIG_JSON
@@ -7,7 +12,7 @@ from utils.logger import log_failure
 from utils.reporting import attach_screenshot
 
 
-def before_all(context):
+def before_all(context: Context) -> None:
     context.ENV = context.config.userdata.get("env", "sit")
     context.COUNTRY = context.config.userdata.get("country", "cn")
     context.RESOURCES = REPORTS
@@ -19,18 +24,18 @@ def before_all(context):
     prepare_browser(context)
     context.page_factory = PageFactory()
     context.ai = AISelectorHealer()
-    context.store = {}
+    context.store: dict[str, Any] = {}
 
 
-def after_all(context):
+def after_all(context: Context) -> None:
     context.browser_manager.stop()
 
 
-def before_feature(context, feature):
+def before_feature(context: Context, feature: Feature) -> None:
     context.feature.store = {}
 
 
-def before_scenario(context, scenario):
+def before_scenario(context: Context, scenario: Scenario) -> None:
     context.kwargs = {}
     context.response = None
     context.request = SimpleNamespace()
@@ -38,11 +43,11 @@ def before_scenario(context, scenario):
     context.scenario.store = {}
 
 
-def before_step(context, step):
+def before_step(context: Context, step: Step) -> None:
     context.bdd_step = step.name
 
 
-def after_step(context, step):
+def after_step(context: Context, step: Step) -> None:
     if step.status == "failed":
         log_failure(f"Step failed: {step.name}")
         if hasattr(context, "page"):

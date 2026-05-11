@@ -41,6 +41,7 @@ class BrowserManager:
         self.playwright = sync_playwright().start()
         browser_launcher = getattr(self.playwright, self.browser_type)
         self.browser = browser_launcher.launch(headless=self.headless)
+        timeout_ms = int(os.getenv('PLAYWRIGHT_TIMEOUT', '30000'))
         if self.enable_tracing:
             self.context = self.browser.new_context(
                 base_url=self.base_url,
@@ -52,6 +53,7 @@ class BrowserManager:
             self.context = self.browser.new_context(base_url=self.base_url)
 
         self.page = self.context.new_page()
+        self.context.set_default_timeout(timeout_ms)
         return self.page
 
     def stop(self):

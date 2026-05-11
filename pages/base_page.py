@@ -1,8 +1,11 @@
+import logging
+from typing import Optional
+
 import playwright.sync_api
 from playwright.sync_api import Page, expect
-import logging
 
 from utils.logger import log_info_emoji
+from utils.retry import retry_on_failure
 
 
 def ai_selector_healer(context, exception, original_selector="") -> str:
@@ -18,8 +21,7 @@ def ai_selector_healer(context, exception, original_selector="") -> str:
     try:
         locator = context.page.locator(new_selector)
         locator.wait_for(timeout=5000)
-        log_info_emoji(
-            "✅ ", "AI-healed selector is valid and found an element.")
+        log_info_emoji("✅ ", "AI-healed selector is valid and found an element.")
     except Exception as e:
         log_info_emoji("❌ ", f"AI-healed selector is invalid: {e}")
     return locator
@@ -28,10 +30,11 @@ def ai_selector_healer(context, exception, original_selector="") -> str:
 class BasePage:
 
     def __init__(self, page: Page, context):
-        self.page = page
+        self.page: Page = page
         self.context = context
         self.logger = logging.getLogger(self.__class__.__name__)
 
+    @retry_on_failure(max_retries=3, base_delay=1.0)
     def navigate_to(self, url: str):
         self.logger.info(f"Navigating to: {url}")
         self.page.goto(url, timeout=120000)
@@ -39,12 +42,14 @@ class BasePage:
     def wait_for_page_load(self):
         self.page.wait_for_load_state("networkidle")
 
-    def get_page_content(self):
+    def get_page_content(self) -> str:
         return self.page.content()
 
+    @retry_on_failure(max_retries=2, base_delay=0.5)
     def click_element(self, selector: str):
         self.page.click(selector)
 
+    @retry_on_failure(max_retries=2, base_delay=0.5)
     def fill_input(self, selector: str, value: str):
         self.page.locator(selector).wait_for(timeout=5000)
         self.page.fill(selector, value)
@@ -75,7 +80,7 @@ class BasePage:
         return self.page.is_visible(selector)
 
     def get_element_text(self, selector: str) -> str:
-        return self.page.text_content(selector)
+        return self.page.text_content(selector) or ""
 
     def get_page_text(self) -> str:
         return self.page.content().lower()
